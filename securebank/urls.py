@@ -6,4 +6,5 @@ urlpatterns = [
     path('', views.HomeView.as_view(), name='home'),
     path('admin/', admin.site.urls),
     path('account/', include('accounts.urls')),
+    path('transaction/', include('transactions.urls')),
 ]
