@@ -39,3 +39,10 @@ class UserUpdateView(View):
             form.save()
             return redirect('profile')
         return render(request, self.template_name, {'form': form})
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update({
+            'title': 'Profile'
+        })
+        return context

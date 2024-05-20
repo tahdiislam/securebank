@@ -12,13 +12,14 @@ from django.contrib import messages
 from datetime import datetime
 from django.db.models import Sum
 from django.shortcuts import redirect, get_object_or_404
+from django.urls import reverse_lazy
 
 # Create your views here.
 class TransactionCreateMixin(LoginRequiredMixin, CreateView):
-    template_name = ''
+    template_name = 'transactions/transaction_form.html'
     model = Transaction
     title = ''
-    success_url = ''
+    success_url = reverse_lazy('transaction_report')
 
     def get_form_kwargs(self) -> dict[str, Any]:
         kwargs = super().get_form_kwargs()
@@ -35,7 +36,7 @@ class TransactionCreateMixin(LoginRequiredMixin, CreateView):
     
 class DepositMoneyView(TransactionCreateMixin):
     form_class = DepositForm
-    title = 'Deposit'
+    title = 'Deposit' 
 
     def get_initial(self) -> dict[str, Any]:
         initial = {'transaction_type': DEPOSIT}
@@ -52,7 +53,7 @@ class DepositMoneyView(TransactionCreateMixin):
         return super().form_valid(form)
     
 class WithdrawalMoneyView(TransactionCreateMixin):
-    form_class = DepositForm
+    form_class = WithDrawalForm
     title = 'Withdraw Money'
 
     def get_initial(self) -> dict[str, Any]:
@@ -72,6 +73,7 @@ class WithdrawalMoneyView(TransactionCreateMixin):
 class LoanRequestView(TransactionCreateMixin):
     form_class = DepositForm
     title = 'Request For Loan'
+    success_url = reverse_lazy('loan_list')
 
     def get_initial(self) -> dict[str, Any]:
         initial = {'transaction_type': LOAN}
@@ -86,7 +88,7 @@ class LoanRequestView(TransactionCreateMixin):
         return super().form_valid(form)
 
 class TransactionReportView(LoginRequiredMixin, ListView):
-    template_name = ''
+    template_name = 'transactions/transaction_report.html'
     model = Transaction
     balance = 0
 
@@ -101,12 +103,12 @@ class TransactionReportView(LoginRequiredMixin, ListView):
         if start_date_str and end_date_str:
             start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
             end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
-
-            self.balance = Transaction.objects.filter(timestamp_date_gte = start_date, timestamp_date_lte = end_date).aggregate(Sum('amount'))['amount_sum']
+            queryset = queryset.filter(timestamp__date__gte = start_date, timestamp__date__lte = end_date)
+            self.balance = Transaction.objects.filter(timestamp__date__gte = start_date, timestamp__date__lte = end_date).aggregate(Sum('amount'))['amount__sum']
         else:
             self.balance = self.request.user.account.balance
         
-        return queryset.distinct()
+        return queryset
     
     def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
         context = super().get_context_data(**kwargs)
@@ -126,14 +128,14 @@ class PayLoanView(LoginRequiredMixin, View):
                 user_account.save()
                 loan.transaction_type = LOAN_PAID
                 loan.save()
-                return redirect()
+                return redirect('loan_list')
             else:
                 messages.error(self.request, f'Loan amount is greater than available balance')
-                return redirect()
+                return redirect('loan_list')
 
 class LoanListView(LoginRequiredMixin, ListView):
     model = Transaction
-    template_name = ''
+    template_name = 'transactions/loan_request.html'
     context_object_name = 'loans'
 
     def get_queryset(self) -> QuerySet[Any]:

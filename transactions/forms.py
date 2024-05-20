@@ -16,7 +16,7 @@ class TransactionForm(forms.ModelForm):
 
     def save(self, commit: bool = True) -> Any:
         self.instance.account = self.user_account
-        self.instance.balance_after_transaction = self.account.balance
+        self.instance.balance_after_transaction = self.instance.account.balance
         return super().save(commit)
 
 class DepositForm(TransactionForm):
@@ -32,7 +32,7 @@ class DepositForm(TransactionForm):
 
 class WithDrawalForm(TransactionForm):
     def clean_amount(self):
-        account = self.account
+        account = self.user_account
         min_withdraw_amount = 500
         max_withdraw_amount = 20000
         balance = account.balance
