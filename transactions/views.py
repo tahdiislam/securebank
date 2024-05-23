@@ -6,13 +6,14 @@ from django.shortcuts import render
 from django.views.generic import CreateView, ListView, View
 from django.contrib.auth.mixins import LoginRequiredMixin
 from .models import Transaction
-from .forms import DepositForm, LoanRequestForm, WithDrawalForm
-from .constants import DEPOSIT, LOAN_PAID, LOAN, WITHDRAWAL
+from .forms import DepositForm, LoanRequestForm, WithDrawalForm, TransferMoneyForm
+from .constants import DEPOSIT, LOAN_PAID, LOAN, WITHDRAWAL, MONEY_TRANSFER
 from django.contrib import messages
 from datetime import datetime
 from django.db.models import Sum
 from django.shortcuts import redirect, get_object_or_404
 from django.urls import reverse_lazy
+from accounts.models import UserBankAccount
 
 # Create your views here.
 class TransactionCreateMixin(LoginRequiredMixin, CreateView):
@@ -51,6 +52,32 @@ class DepositMoneyView(TransactionCreateMixin):
         )
         messages.success(self.request, f'{amount}$ was deposited to your account successfully')
         return super().form_valid(form)
+class TransferMoneyView(TransactionCreateMixin):
+    form_class = TransferMoneyForm
+    title = 'Transfer Money'
+    def get_initial(self):
+        initial = {'transaction_type': MONEY_TRANSFER}
+        return initial
+    # ['amount', 'transaction_type', 'sender_account_no','receiver_account_no']
+    def form_valid(self, form):
+        amount = form.cleaned_data.get('amount')
+        receiver_account_no = form.cleaned_data.get('receiver_account_no')
+        account = self.request.user.account
+        receiver_account = get_object_or_404(UserBankAccount, account_no=receiver_account_no)
+        if amount < 0:
+            messages.warning(self.request, "amount is invalid")
+        elif account.balance < amount:
+            messages.warning(self.request, "You Don't have enough balance")
+        elif receiver_account and receiver_account_no != account.account_no:
+            receiver_account.balance += amount
+            account.balance -= amount
+            account.save(update_fields = ['balance'])
+            receiver_account.save(update_fields = ['balance'])
+        else:
+            messages.warning(self.request, "Receiver account number is not valid")
+
+        return super().form_valid(form)
+    
     
 class WithdrawalMoneyView(TransactionCreateMixin):
     form_class = WithDrawalForm
@@ -71,7 +98,7 @@ class WithdrawalMoneyView(TransactionCreateMixin):
         return super().form_valid(form)
 
 class LoanRequestView(TransactionCreateMixin):
-    form_class = DepositForm
+    form_class = LoanRequestForm
     title = 'Request For Loan'
     success_url = reverse_lazy('loan_list')
 
