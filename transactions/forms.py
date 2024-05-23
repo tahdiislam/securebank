@@ -2,6 +2,7 @@ from typing import Any
 from django import forms
 from .models import Transaction
 
+BANK_IS_BANKRUPT = True
 class TransactionForm(forms.ModelForm):
     
     class Meta:
@@ -21,6 +22,8 @@ class TransactionForm(forms.ModelForm):
 
 class DepositForm(TransactionForm):
     def clean_amount(self):
+        if BANK_IS_BANKRUPT:
+            raise forms.ValidationError(f'Bank is bankrupt!!!')
         min_deposit_amount = 100
         amount = self.cleaned_data.get('amount')
 
@@ -35,6 +38,8 @@ class TransferMoneyForm(TransactionForm):
         model = Transaction
         fields = ['amount', 'transaction_type','receiver_account_no']
     def clean_amount(self):
+        if BANK_IS_BANKRUPT:
+            raise forms.ValidationError(f'Bank is bankrupt!!!')
         min_deposit_amount = 100
         amount = self.cleaned_data.get('amount')
 
@@ -50,6 +55,8 @@ class TransferMoneyForm(TransactionForm):
 
 class WithDrawalForm(TransactionForm):
     def clean_amount(self):
+        if BANK_IS_BANKRUPT:
+            raise forms.ValidationError(f'Bank is bankrupt!!!')
         account = self.user_account
         min_withdraw_amount = 500
         max_withdraw_amount = 20000
@@ -72,5 +79,7 @@ class WithDrawalForm(TransactionForm):
 
 class LoanRequestForm(Transaction):
     def clean_amount(self):
+        if BANK_IS_BANKRUPT:
+            raise forms.ValidationError(f'Bank is bankrupt!!!')
         amount = self.cleaned_data["amount"]    
         return amount
