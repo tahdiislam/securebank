@@ -2,7 +2,7 @@ from typing import Any
 from django import forms
 from .models import Transaction
 
-BANK_IS_BANKRUPT = True
+BANK_IS_BANKRUPT = False
 class TransactionForm(forms.ModelForm):
     
     class Meta:
@@ -77,7 +77,7 @@ class WithDrawalForm(TransactionForm):
             )
         return amount
 
-class LoanRequestForm(Transaction):
+class LoanRequestForm(TransactionForm):
     def clean_amount(self):
         if BANK_IS_BANKRUPT:
             raise forms.ValidationError(f'Bank is bankrupt!!!')
