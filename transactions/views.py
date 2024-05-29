@@ -63,6 +63,7 @@ class DepositMoneyView(TransactionCreateMixin):
         send_transaction_email(self.request.user, amount, 'Deposit Message', 'transactions/deposit_mail.html')
         messages.success(self.request, f'{amount}$ was deposited to your account successfully')
         return super().form_valid(form)
+
 class TransferMoneyView(TransactionCreateMixin):
     form_class = TransferMoneyForm
     title = 'Transfer Money'
@@ -84,6 +85,10 @@ class TransferMoneyView(TransactionCreateMixin):
             account.balance -= amount
             account.save(update_fields = ['balance'])
             receiver_account.save(update_fields = ['balance'])
+            # send email to the money sender
+            send_transaction_email(self.request.user, amount, 'Money Transfer Confirmation', 'transactions/send_money_email.html')
+            # send email to the money receiver
+            send_transaction_email(receiver_account.user, amount, 'Money Transfer Confirmation', 'transactions/receive_money_email.html')
         else:
             messages.warning(self.request, "Receiver account number is not valid")
 
